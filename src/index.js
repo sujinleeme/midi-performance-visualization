@@ -2,10 +2,15 @@ import React from "react";
 import ReactDOM from "react-dom";
 
 import "./index.css";
-import { Grommet, Box, Heading } from "grommet";
+import { Grommet, Heading } from "grommet";
 import { grommet, hpe, dark } from "grommet/themes";
-
+import MusicScore from "./MusicScore";
 import * as serviceWorker from "./serviceWorker";
+
+if (process.env.NODE_ENV !== "production") {
+  const { whyDidYouUpdate } = require("why-did-you-update");
+  whyDidYouUpdate(React);
+}
 
 const THEMES = {
   grommet,
@@ -13,22 +18,19 @@ const THEMES = {
   dark,
 };
 
-const App = () => {
-  const color = "#FFD6D6";
-  const themeName = "grommet";
-  return (
-    <Grommet theme={THEMES[themeName || "grommet"]}>
-      <Box
-        background={color}
-        style={{ minHeight: "100vh", transition: "background 2s" }}
-      >
+class App extends React.Component {
+  render() {
+    const themeName = "grommet";
+    return (
+      <Grommet theme={THEMES[themeName || "grommet"]}>
         <Heading level={3} responsive>
           MIDI performance Visualization
         </Heading>
-      </Box>
-    </Grommet>
-  );
-};
+        <MusicScore />
+      </Grommet>
+    );
+  }
+}
 
 ReactDOM.render(<App />, document.getElementById("root"));
 
