@@ -39,7 +39,6 @@ class App extends React.Component {
 
   componentDidMount() {
     this.onScoreSizeChange();
-    document.addEventListener("keydown", this.handleKeyPress, false);
     window.addEventListener("resize", this.onScoreSizeChange.bind(this));
   }
 
@@ -50,21 +49,6 @@ class App extends React.Component {
       scoreView: { ...scoreView, ...result },
     });
   }
-
-  handleKeyPress = e => {
-    e = e || window.event;
-    const type = e.key;
-
-    const arrowKeys = {
-      ArrowLeft: () => {},
-      ArrowRight: () => {},
-      ArrowUp: () => {},
-      ArrowDown: () => {},
-      default: () => {},
-    };
-
-    (arrowKeys[type] || arrowKeys.default)();
-  };
 
   render() {
     const themeName = "grommet";

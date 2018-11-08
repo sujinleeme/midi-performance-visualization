@@ -41,6 +41,12 @@ const Wrapper = () => WrappedComponent => {
       isLoaded: false,
       scriptCache: {},
       vrvToolkit: {},
+      score: {
+        totalPageNum: 0,
+      },
+      current: {
+        pageNum: 1,
+      },
     };
 
     static getDerivedStateFromProps(state: State) {
@@ -56,7 +62,89 @@ const Wrapper = () => WrappedComponent => {
     }
 
     componentDidMount() {
-      const { scriptCache } = this.state;
+      this.fetchScoreData();
+      this.initVrvToolkit();
+      document.addEventListener("keydown", this.handleKeyPress, false);
+    }
+
+    componentDidUpdate(prevProps) {
+      const { isLoaded } = this.state;
+      const { page } = this.props;
+      if (page !== prevProps.page && isLoaded) {
+        this.loadScorePage();
+      }
+    }
+
+    setScoreOption() {
+      const { vrvToolkit } = this.state;
+      const { page } = this.props;
+
+      const options = {
+        pageHeight: (page.height * 100) / page.zoom,
+        pageWidth: (page.width * 100) / page.zoom,
+        scale: page.zoom,
+        adjustPageHeight: true,
+      };
+      page && vrvToolkit.setOptions(options);
+    }
+
+    handleKeyPress = e => {
+      e = e || window.event;
+      const type = e.key;
+
+      const arrowKeys = {
+        ArrowLeft: () => this.movePrevPage(),
+        ArrowRight: () => this.moveNextPage(),
+        ArrowUp: () => {},
+        ArrowDown: () => {},
+        default: () => {},
+      };
+
+      (arrowKeys[type] || arrowKeys.default)();
+    };
+
+    loadScorePage(pageNum = 1) {
+      const { vrvToolkit } = this.state;
+      if (vrvToolkit) {
+        this.setScoreOption();
+        vrvToolkit.redoLayout();
+        const musicScoreSvg = vrvToolkit.renderToSVG(pageNum, {});
+        const totalPageNum = vrvToolkit.getPageCount();
+        this.setState({
+          musicScoreSvg,
+          score: {
+            totalPageNum,
+          },
+        });
+      }
+    }
+
+    moveNextPage() {
+      const { score, current } = this.state;
+      if (current.pageNum < score.totalPageNum) {
+        this.setState(prevState => ({
+          current: {
+            pageNum: prevState.current.pageNum + 1,
+          },
+        }));
+        this.loadScorePage(current.pageNum + 1);
+      }
+    }
+
+    movePrevPage() {
+      const { current } = this.state;
+      if (current.pageNum > 1) {
+        console.log(current.pageNum - 1);
+        this.setState(prevState => ({
+          current: {
+            pageNum: prevState.current.pageNum - 1,
+          },
+        }));
+        this.loadScorePage(current.pageNum - 1);
+      }
+    }
+
+    fetchScoreData() {
       axios({
         method: "get",
         url: "/static/Beethoven_StringQuartet_op.18_no.2.mei",
@@ -73,7 +161,10 @@ const Wrapper = () => WrappedComponent => {
             errorMessage: error,
           });
         });
+    }
 
+    initVrvToolkit() {
+      const { scriptCache } = this.state;
       scriptCache &&
         scriptCache.verovio.onLoad((err, tag) => {
           this.setState(
@@ -89,43 +180,12 @@ const Wrapper = () => WrappedComponent => {
         });
     }
 
-    componentDidUpdate(prevProps) {
-      const { isLoaded } = this.state;
-      const { page } = this.props;
-      if (page !== prevProps.page && isLoaded) {
-        this.loadScorePage();
-      }
-    }
-
-    setMusicScoreOptions() {
-      const { vrvToolkit } = this.state;
-      const { page } = this.props;
-
-      const options = {
-        pageHeight: (page.height * 100) / page.zoom,
-        pageWidth: (page.width * 100) / page.zoom,
-        scale: page.zoom,
-        adjustPageHeight: true,
-      };
-      page && vrvToolkit.setOptions(options);
-    }
-
     loadScore() {
       const { vrvToolkit, musicScore } = this.state;
       if (vrvToolkit) {
-        this.setMusicScoreOptions();
+        this.setScoreOption();
         vrvToolkit.loadData(musicScore);
         this.loadScorePage();
-      }
-    }
-
-    loadScorePage(pageNumer = 1) {
-      const { vrvToolkit } = this.state;
-      if (vrvToolkit) {
-        this.setMusicScoreOptions();
-        vrvToolkit.redoLayout();
-        const musicScoreSvg = vrvToolkit.renderToSVG(pageNumer, {});
-        this.setState({ musicScoreSvg });
       }
     }
 
