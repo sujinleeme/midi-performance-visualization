@@ -19,46 +19,78 @@ const THEMES = {
   dark,
 };
 
+const measureElement = element => ({
+  width: element.current.getBoundingClientRect().width,
+  height: element.current.getBoundingClientRect().height,
+});
+
 class App extends React.Component {
+  scoreEL = React.createRef();
+
+  pageEl = React.createRef();
+
+  state = {
+    scoreView: {
+      height: 0,
+      width: 0,
+      zoom: 30,
+    },
+  };
+
+  componentDidMount() {
+    this.onScoreSizeChange();
+  }
+
+  onScoreSizeChange() {
+    const result = measureElement(this.scoreEL);
+    const { scoreView } = this.state;
+    this.setState({
+      scoreView: { ...scoreView, ...result },
+    });
+  }
+
   render() {
     const themeName = "grommet";
+    const { scoreView } = this.state;
     return (
       <Grommet theme={THEMES[themeName || "grommet"]}>
-        <Grid
-          margin="small"
-          areas={[
-            { name: "header", start: [0, 0], end: [1, 0] },
-            { name: "main", start: [0, 1], end: [0, 1] },
-            { name: "control", start: [1, 1], end: [1, 1] },
-            { name: "foot", start: [0, 2], end: [1, 2] },
-          ]}
-          columns={["3/4", "1/4"]}
-          rows={["auto", "large", "auto"]}
-        >
-          <Box gridArea="header" background="brand">
-            <Box
-              background="brand"
-              direction="row"
-              align="center"
-              pad={{ between: "medium" }}
-            >
-              <Heading level={3} responsive>
-                MIDI performance Visualization
-              </Heading>
+        <Box>
+          <Grid
+            margin="small"
+            areas={[
+              { name: "header", start: [0, 0], end: [1, 0] },
+              { name: "main", start: [0, 1], end: [0, 1] },
+              { name: "control", start: [1, 1], end: [1, 1] },
+              { name: "foot", start: [0, 2], end: [1, 2] },
+            ]}
+            columns={["3/4", "1/4"]}
+            rows={["auto", "large", "auto"]}
+          >
+            <Box gridArea="header" background="brand">
+              <Box
+                background="brand"
+                direction="row"
+                align="center"
+                pad={{ between: "medium" }}
+              >
+                <Heading level={3} responsive>
+                  MIDI performance Visualization
+                </Heading>
+              </Box>
             </Box>
-          </Box>
-          <Box gridArea="main" background="gray">
-            <MusicScore />
-          </Box>
-          <Box gridArea="control" background="brand">
-            control
-          </Box>
-          <Box gridArea="foot" background="dark">
-            <Box>
-              <Paragraph margin="none">© 2018 SNU MARG x KASIT MAC</Paragraph>
+            <Box ref={this.scoreEL} gridArea="main" background="gray">
+              <MusicScore page={scoreView} />
             </Box>
-          </Box>
-        </Grid>
+            <Box gridArea="control" background="brand">
+              control
+            </Box>
+            <Box gridArea="foot" background="dark">
+              <Box>
+                <Paragraph margin="none">© 2018 SNU MARG x KASIT MAC</Paragraph>
+              </Box>
+            </Box>
+          </Grid>
+        </Box>
       </Grommet>
     );
   }

@@ -6,7 +6,7 @@ import { SCRIPTS } from "./constants";
 import { ScoreProvider, ScoreConsumer } from "./context";
 
 type Props = {
-  /* ... */
+  page: Object,
 };
 
 type State = {
@@ -14,15 +14,15 @@ type State = {
   errorMessage: ?string,
   musicScore: ?string,
   musicScoreSvg: ?HTMLDivElement,
-  loaded: boolean,
+  isLoaded: boolean,
   scriptCache: any,
   vrvToolkit: any,
 };
 
 const Container = () => (
   <ScoreConsumer>
-    {({ loaded, error, musicScoreSvg }) =>
-      loaded && !error ? (
+    {({ isLoaded, error, musicScoreSvg }) =>
+      isLoaded && !error ? (
         <div dangerouslySetInnerHTML={{ __html: musicScoreSvg }} />
       ) : (
         <div>Loading</div>
@@ -38,7 +38,7 @@ const Wrapper = () => WrappedComponent => {
       errorMessage: "",
       musicScore: null,
       musicScoreSvg: null,
-      loaded: false,
+      isLoaded: false,
       scriptCache: {},
       vrvToolkit: {},
     };
@@ -51,6 +51,7 @@ const Wrapper = () => WrappedComponent => {
           }),
         };
       }
+
       return null;
     }
 
@@ -78,20 +79,54 @@ const Wrapper = () => WrappedComponent => {
           this.setState(
             {
               error: tag.error,
-              loaded: true,
+              isLoaded: true,
               vrvToolkit: new window.verovio.toolkit(),
             },
             () => {
-              this.loadMusicScore();
+              this.loadScore();
             }
           );
         });
     }
 
-    loadMusicScore() {
+    componentDidUpdate(prevProps) {
+      const { isLoaded } = this.state;
+      const { page } = this.props;
+      if (page !== prevProps.page && isLoaded) {
+        this.loadScorePage();
+      }
+    }
+
+    setMusicScoreOptions() {
+      const { vrvToolkit } = this.state;
+      const { page } = this.props;
+
+      const options = {
+        pageHeight: (page.height * 100) / page.zoom,
+        pageWidth: (page.width * 100) / page.zoom,
+        scale: page.zoom,
+        adjustPageHeight: true,
+      };
+      page && vrvToolkit.setOptions(options);
+    }
+
+    loadScore() {
       const { vrvToolkit, musicScore } = this.state;
-      const musicScoreSvg = vrvToolkit && vrvToolkit.renderData(musicScore, {});
-      this.setState({ musicScoreSvg });
+      if (vrvToolkit) {
+        this.setMusicScoreOptions();
+        vrvToolkit.loadData(musicScore);
+        this.loadScorePage();
+      }
+    }
+
+    loadScorePage(pageNumer = 1) {
+      const { vrvToolkit } = this.state;
+      if (vrvToolkit) {
+        this.setMusicScoreOptions();
+        vrvToolkit.redoLayout();
+        const musicScoreSvg = vrvToolkit.renderToSVG(pageNumer, {});
+        this.setState({ musicScoreSvg });
+      }
     }
 
     render() {
