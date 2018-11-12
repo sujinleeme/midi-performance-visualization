@@ -14,9 +14,16 @@ type State = {
   errorMessage: ?string,
   musicScore: ?string,
   musicScoreSvg: ?HTMLDivElement,
+  midi: ?string,
   isLoaded: boolean,
   scriptCache: any,
   vrvToolkit: any,
+  score: {
+    totalPageNum: number,
+  },
+  current: {
+    pageNum: number,
+  },
 };
 
 const Container = () => (
@@ -38,6 +45,7 @@ const Wrapper = () => WrappedComponent => {
       errorMessage: "",
       musicScore: null,
       musicScoreSvg: null,
+      midi: null,
       isLoaded: false,
       scriptCache: {},
       vrvToolkit: {},
@@ -57,7 +65,6 @@ const Wrapper = () => WrappedComponent => {
           }),
         };
       }
-
       return null;
     }
 
@@ -99,22 +106,35 @@ const Wrapper = () => WrappedComponent => {
         ArrowDown: () => {},
         default: () => {},
       };
-
       (arrowKeys[type] || arrowKeys.default)();
     };
 
-    loadScorePage(pageNum = 1) {
+    initScorePage(pageNum = 1) {
       const { vrvToolkit } = this.state;
       if (vrvToolkit) {
         this.setScoreOption();
         vrvToolkit.redoLayout();
         const musicScoreSvg = vrvToolkit.renderToSVG(pageNum, {});
         const totalPageNum = vrvToolkit.getPageCount();
+        const midi = `data:audio/midi;base64${vrvToolkit.renderToMIDI()}`;
+
         this.setState({
           musicScoreSvg,
+          midi,
           score: {
             totalPageNum,
           },
+        });
+      }
+    }
+
+    loadScorePage(pageNum = 1) {
+      const { vrvToolkit } = this.state;
+      if (vrvToolkit) {
+        vrvToolkit.redoLayout();
+        const musicScoreSvg = vrvToolkit.renderToSVG(pageNum, {});
+        this.setState({
+          musicScoreSvg,
         });
       }
     }
@@ -134,7 +154,6 @@ const Wrapper = () => WrappedComponent => {
     movePrevPage() {
       const { current } = this.state;
       if (current.pageNum > 1) {
-        console.log(current.pageNum - 1);
         this.setState(prevState => ({
           current: {
             pageNum: prevState.current.pageNum - 1,
@@ -147,7 +166,7 @@ const Wrapper = () => WrappedComponent => {
     fetchScoreData() {
       axios({
         method: "get",
-        url: "/static/Beethoven_StringQuartet_op.18_no.2.mei",
+        url: "/static/chopin10_3.mei",
         responseType: "text",
       })
         .then(response => {
@@ -173,9 +192,7 @@ const Wrapper = () => WrappedComponent => {
               isLoaded: true,
               vrvToolkit: new window.verovio.toolkit(),
             },
-            () => {
-              this.loadScore();
-            }
+            () => this.loadScore()
           );
         });
     }
@@ -183,9 +200,8 @@ const Wrapper = () => WrappedComponent => {
     loadScore() {
       const { vrvToolkit, musicScore } = this.state;
       if (vrvToolkit) {
-        this.setScoreOption();
         vrvToolkit.loadData(musicScore);
-        this.loadScorePage();
+        this.initScorePage();
       }
     }
 

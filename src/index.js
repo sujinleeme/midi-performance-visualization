@@ -65,7 +65,7 @@ class App extends React.Component {
               { name: "foot", start: [0, 2], end: [1, 2] },
             ]}
             columns={["3/4", "1/4"]}
-            rows={["auto", "large", "auto"]}
+            rows={["auto", "300px", "auto"]}
           >
             <Box gridArea="header" background="brand">
               <Box
