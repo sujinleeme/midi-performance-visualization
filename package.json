@@ -7,6 +7,8 @@
     "axios": "^0.18.0",
     "grommet": "^2.0.0-rc",
     "grommet-icons": "^3.1.0",
+    "midi-sounds-react": "^1.2.54",
+    "midiplayer": "^1.0.0",
     "normalize.css": "^8.0.0",
     "react": "^16.5.2",
     "react-dom": "^16.5.2",
@@ -49,11 +51,12 @@
     "not op_mini all"
   ],
   "devDependencies": {
-    "babel-eslint": "8",
+    "babel-eslint": "^8.2.6",
     "eslint": "4.x",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-config-prettier": "^3.1.0",
     "eslint-import-resolver-webpack": "^0.10.1",
+    "eslint-plugin-flowtype": "^3.2.0",
     "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-jsx-a11y": "^6.1.2",
     "eslint-plugin-prettier": "^3.0.0",

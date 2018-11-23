@@ -1,9 +1,11 @@
 // @flow
+
 import React, { Component } from "react";
 import axios from "axios";
 import cache from "./utils/ScriptCache";
 import { SCRIPTS } from "./constants";
 import { ScoreProvider, ScoreConsumer } from "./context";
+import MusicPlayer from "./MusicPlayer";
 
 type Props = {
   page: Object,
@@ -17,7 +19,6 @@ type State = {
   midi: ?string,
   isLoaded: boolean,
   scriptCache: any,
-  vrvToolkit: any,
   score: {
     totalPageNum: number,
   },
@@ -26,7 +27,7 @@ type State = {
   },
 };
 
-const Container = () => (
+const ScoreView = () => (
   <ScoreConsumer>
     {({ isLoaded, error, musicScoreSvg }) =>
       isLoaded && !error ? (
@@ -48,7 +49,6 @@ const Wrapper = () => WrappedComponent => {
       midi: null,
       isLoaded: false,
       scriptCache: {},
-      vrvToolkit: {},
       score: {
         totalPageNum: 0,
       },
@@ -56,6 +56,8 @@ const Wrapper = () => WrappedComponent => {
         pageNum: 1,
       },
     };
+
+    vrvToolkit: Object = {};
 
     static getDerivedStateFromProps(state: State) {
       if (!state.scriptCache) {
@@ -74,28 +76,32 @@ const Wrapper = () => WrappedComponent => {
       document.addEventListener("keydown", this.handleKeyPress, false);
     }
 
-    componentDidUpdate(prevProps) {
+    componentDidUpdate(prevProps: Props) {
       const { isLoaded } = this.state;
       const { page } = this.props;
       if (page !== prevProps.page && isLoaded) {
-        this.loadScorePage();
+        this.reloadScoreSVG();
       }
     }
 
-    setScoreOption() {
-      const { vrvToolkit } = this.state;
-      const { page } = this.props;
+    componentWillUnmount() {
+      document.removeEventListener("keydown", this.handleKeyPress, false);
+    }
 
+    setScoreOption() {
+      const { page } = this.props;
       const options = {
         pageHeight: (page.height * 100) / page.zoom,
         pageWidth: (page.width * 100) / page.zoom,
         scale: page.zoom,
         adjustPageHeight: true,
       };
-      page && vrvToolkit.setOptions(options);
+      this.vrvToolkit && page && this.vrvToolkit.setOptions(options);
     }
 
-    handleKeyPress = e => {
+    handleKeyPress = (e: any) => {
+      // const doc: HTMLElement | null = document;
+
       e = e || window.event;
       const type = e.key;
 
@@ -109,14 +115,13 @@ const Wrapper = () => WrappedComponent => {
       (arrowKeys[type] || arrowKeys.default)();
     };
 
-    initScorePage(pageNum = 1) {
-      const { vrvToolkit } = this.state;
-      if (vrvToolkit) {
+    initScorePage(pageNum: number = 1) {
+      if (this.vrvToolkit) {
         this.setScoreOption();
-        vrvToolkit.redoLayout();
-        const musicScoreSvg = vrvToolkit.renderToSVG(pageNum, {});
-        const totalPageNum = vrvToolkit.getPageCount();
-        const midi = `data:audio/midi;base64${vrvToolkit.renderToMIDI()}`;
+        this.vrvToolkit.redoLayout();
+        const musicScoreSvg = this.vrvToolkit.renderToSVG(pageNum, {});
+        const totalPageNum = this.vrvToolkit.getPageCount();
+        const midi = `${this.vrvToolkit.renderToMIDI()}`;
 
         this.setState({
           musicScoreSvg,
@@ -128,11 +133,11 @@ const Wrapper = () => WrappedComponent => {
       }
     }
 
-    loadScorePage(pageNum = 1) {
-      const { vrvToolkit } = this.state;
-      if (vrvToolkit) {
-        vrvToolkit.redoLayout();
-        const musicScoreSvg = vrvToolkit.renderToSVG(pageNum, {});
+    reloadScoreSVG(pageNum: number = 1) {
+      if (this.vrvToolkit) {
+        this.setScoreOption();
+        this.vrvToolkit.redoLayout();
+        const musicScoreSvg = this.vrvToolkit.renderToSVG(pageNum, {});
         this.setState({
           musicScoreSvg,
         });
@@ -147,7 +152,7 @@ const Wrapper = () => WrappedComponent => {
             pageNum: prevState.current.pageNum + 1,
           },
         }));
-        this.loadScorePage(current.pageNum + 1);
+        this.reloadScoreSVG(current.pageNum + 1);
       }
     }
 
@@ -159,7 +164,7 @@ const Wrapper = () => WrappedComponent => {
             pageNum: prevState.current.pageNum - 1,
           },
         }));
-        this.loadScorePage(current.pageNum - 1);
+        this.reloadScoreSVG(current.pageNum - 1);
       }
     }
 
@@ -190,26 +195,32 @@ const Wrapper = () => WrappedComponent => {
             {
               error: tag.error,
               isLoaded: true,
-              vrvToolkit: new window.verovio.toolkit(),
             },
-            () => this.loadScore()
+            () => {
+              this.vrvToolkit = new window.verovio.toolkit();
+              if (this.vrvToolkit) {
+                this.loadScore();
+              }
+            }
           );
         });
     }
 
     loadScore() {
-      const { vrvToolkit, musicScore } = this.state;
-      if (vrvToolkit) {
-        vrvToolkit.loadData(musicScore);
-        this.initScorePage();
-      }
+      const { musicScore } = this.state;
+      this.vrvToolkit.loadData(musicScore);
+      this.initScorePage();
     }
 
     render() {
+      const { midi } = this.state;
       return (
-        <ScoreProvider value={this.state}>
-          <WrappedComponent />
-        </ScoreProvider>
+        <div>
+          <ScoreProvider value={this.state}>
+            <WrappedComponent />
+          </ScoreProvider>
+          <MusicPlayer midi={midi} />
+        </div>
       );
     }
   }
@@ -217,4 +228,4 @@ const Wrapper = () => WrappedComponent => {
   return ScoreWrapper;
 };
 
-export default Wrapper()(Container);
+export default Wrapper()(ScoreView);

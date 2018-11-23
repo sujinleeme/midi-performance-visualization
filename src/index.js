@@ -8,10 +8,10 @@ import { grommet, hpe, dark } from "grommet/themes";
 import MusicScore from "./MusicScore";
 import * as serviceWorker from "./serviceWorker";
 
-if (process.env.NODE_ENV !== "production") {
-  const { whyDidYouUpdate } = require("why-did-you-update");
-  whyDidYouUpdate(React);
-}
+// if (process.env.NODE_ENV !== "production") {
+//   const { whyDidYouUpdate } = require("why-did-you-update");
+//   whyDidYouUpdate(React);
+// }
 
 const THEMES = {
   grommet,
@@ -87,7 +87,7 @@ class App extends React.Component {
             </Box>
             <Box gridArea="foot" background="dark">
               <Box>
-                <Paragraph margin="none">© 2018 SNU MARG x KASIT MAC</Paragraph>
+                <Paragraph margin="none">©</Paragraph>
               </Box>
             </Box>
           </Grid>

@@ -21,7 +21,7 @@ function ScriptCache(scripts) {
       const promise = new Promise((resolve, reject) => {
         const body = document.getElementsByTagName("body")[0];
         tag.type = "text/javascript";
-        tag.crossorigin = "anonymous";
+        tag.crossorigin = "crossorigin";
         tag.async = true; // Load in order
 
         const cbName = `loaderCB${counter++}${Date.now()}`;
