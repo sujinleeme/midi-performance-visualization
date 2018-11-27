@@ -1,7 +1,7 @@
 // @flow
-
 import React, { Component } from "react";
-import { RangeInput } from "grommet";
+import { Meter, Stack } from "grommet";
+
 import {
   PlayFill,
   PauseFill,
@@ -10,8 +10,8 @@ import {
   VolumeMute,
 } from "grommet-icons";
 import MIDISounds from "midi-sounds-react";
-import MIDIFile from "./MIDIFile";
-import { MusicPlayerProvider, MusicPlayerConsumer } from "./context";
+import MIDIFile from "../../MIDIFile";
+import { MusicPlayerProvider, MusicPlayerConsumer } from "../../context";
 
 const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
   const binaryString = window.atob(base64);
@@ -76,19 +76,19 @@ class MusicPlayer extends Component<Props, State> {
     volume: 1,
   };
 
-  midiSounds: Object = React.createRef();
-
-  midiFile: Object = new MIDIFile();
-
   audioContextFunc: window = window.AudioContext || window.webkitAudioContext;
 
   audioContext: Object = new this.audioContextFunc();
 
+  midiFile: Object = new MIDIFile();
+
+  midiSoundsRef: Object = React.createRef();
+
+  scrubberRef: ?Object = React.createRef();
+
   stepDuration: number = 44 / 1000;
 
   handleAdjustPlay: () => void = this.handleAdjustPlay.bind(this);
-
-  handleProgress: () => void = this.handleProgress.bind(this);
 
   componentDidUpdate(prevProps: Props, prevState: State) {
     const { song, playing } = this.state;
@@ -104,41 +104,7 @@ class MusicPlayer extends Component<Props, State> {
     }
   }
 
-  startLoad() {
-    this.midiSounds.current &&
-      this.setState({ player: this.midiSounds.current.player }, () => {
-        const { song, player } = this.state;
-        const reverberator = player.createReverberator(this.audioContext);
-        reverberator.output.connect(this.audioContext.destination);
-        this.setState({ reverberator: reverberator.input });
-        // set Instrument to every track
-        for (let i = 0; i < song.tracks.length; i++) {
-          const nn = findFirstIns(player, song.tracks[i].program);
-          const info = player.loader.instrumentInfo(nn);
-          song.tracks[i].info = info;
-          song.tracks[i].id = nn;
-          player.loader.startLoad(this.audioContext, info.url, info.variable);
-        }
-      });
-  }
-
-  parseMIDISong() {
-    const { midi } = this.props;
-    if (midi) {
-      const arrayBuffer = base64ToArrayBuffer(midi);
-      const midiFile = new MIDIFile(arrayBuffer);
-      const song = midiFile.parseSong();
-      this.setState({ song });
-    }
-  }
-
-  handleAdjustPlay() {
-    this.setState(prevState => ({
-      playing: !prevState.playing,
-    }));
-  }
-
-  startPlay() {
+  startPlay = () => {
     const { isPlayed, song, progress } = this.state;
 
     if (isPlayed) {
@@ -156,29 +122,15 @@ class MusicPlayer extends Component<Props, State> {
       }));
     }
     return this.tick();
-  }
+  };
 
-  handleAdjustVolume() {
+  handleAdjustVolume = () => {
     this.setState(prevState => ({
       volume: prevState.volume === 2 ? 0 : prevState.volume + 1,
     }));
-  }
+  };
 
-  handleProgress(e: SyntheticInputEvent<EventTarget>) {
-    const { player, song } = this.state;
-    const progress = parseInt(e.target.value, 10);
-    this.setState({ progress });
-
-    player.cancelQueue(this.audioContext);
-    const next = (song.duration * progress) / 100;
-    this.setState((prevState: State) => ({
-      playing: true,
-      songStart: prevState.songStart - (next - prevState.currentSongTime),
-      currentSongTime: next,
-    }));
-  }
-
-  tick() {
+  tick = () => {
     const { currentSongTime, nextStepTime, song, playing } = this.state;
     if (!playing || !song) {
       return;
@@ -208,9 +160,9 @@ class MusicPlayer extends Component<Props, State> {
     window.requestAnimationFrame(() => {
       this.tick();
     });
-  }
+  };
 
-  sendNotes(start: number, end: number) {
+  sendNotes = (start: number, end: number) => {
     const { song, songStart, reverberator, player } = this.state;
     // console.log(song.tracks);
 
@@ -265,6 +217,57 @@ class MusicPlayer extends Component<Props, State> {
         }
       }
     }
+  };
+
+  seek = e => {
+    if (this.scrubberRef) {
+      const scrubberRect = this.scrubberRef.getBoundingClientRect();
+      const percent =
+        ((e.clientX - scrubberRect.left) / scrubberRect.width) * 100;
+      const { player, song } = this.state;
+      this.setState({ progress: percent });
+      player.cancelQueue(this.audioContext);
+      const next = (song.duration * percent) / 100;
+      this.setState((prevState: State) => ({
+        playing: true,
+        songStart: prevState.songStart - (next - prevState.currentSongTime),
+        currentSongTime: next,
+      }));
+    }
+  };
+
+  parseMIDISong = () => {
+    const { midi } = this.props;
+    if (midi) {
+      const arrayBuffer = base64ToArrayBuffer(midi);
+      const midiFile = new MIDIFile(arrayBuffer);
+      const song = midiFile.parseSong();
+      this.setState({ song });
+    }
+  };
+
+  startLoad = () => {
+    this.midiSoundsRef.current &&
+      this.setState({ player: this.midiSoundsRef.current.player }, () => {
+        const { song, player } = this.state;
+        const reverberator = player.createReverberator(this.audioContext);
+        reverberator.output.connect(this.audioContext.destination);
+        this.setState({ reverberator: reverberator.input });
+        // set Instrument to every track
+        for (let i = 0; i < song.tracks.length; i++) {
+          const nn = findFirstIns(player, song.tracks[i].program);
+          const info = player.loader.instrumentInfo(nn);
+          song.tracks[i].info = info;
+          song.tracks[i].id = nn;
+          player.loader.startLoad(this.audioContext, info.url, info.variable);
+        }
+      });
+  };
+
+  handleAdjustPlay() {
+    this.setState(prevState => ({
+      playing: !prevState.playing,
+    }));
   }
 
   render() {
@@ -272,8 +275,16 @@ class MusicPlayer extends Component<Props, State> {
       <MusicPlayerProvider value={this.state}>
         <PlayButton onClick={this.handleAdjustPlay} />
         <VolumeButton onClick={() => this.handleAdjustVolume()} />
-        <ProgressBar onChange={this.handleProgress} />
-        <MIDISounds ref={this.midiSounds} />
+        <Stack>
+          <div
+            ref={e => {
+              this.scrubberRef = e;
+            }}
+          >
+            <AudioProgressBar onClick={this.seek} />
+          </div>
+        </Stack>
+        <MIDISounds appElementName="root" ref={this.midiSoundsRef} />
       </MusicPlayerProvider>
     );
   }
@@ -298,16 +309,24 @@ const VolumeButton = ({ onClick }) => {
   );
 };
 
-const ProgressBar = ({ onChange }) => (
+const AudioProgressBar = ({ onClick }) => (
   <MusicPlayerConsumer>
     {({ progress }) => (
-      <RangeInput
-        step={1}
-        min={0}
-        max={100}
-        value={progress}
-        onChange={onChange}
-      />
+      <Stack>
+        <Meter
+          aria-label="Audio progress"
+          type="bar"
+          size="full"
+          onClick={onClick}
+          thickness="small"
+          values={[
+            {
+              color: "accent-1",
+              value: progress,
+            },
+          ]}
+        />
+      </Stack>
     )}
   </MusicPlayerConsumer>
 );

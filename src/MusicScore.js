@@ -5,7 +5,7 @@ import axios from "axios";
 import cache from "./utils/ScriptCache";
 import { SCRIPTS } from "./constants";
 import { ScoreProvider, ScoreConsumer } from "./context";
-import MusicPlayer from "./MusicPlayer";
+import MusicPlayer from "./components/MusicPlayer";
 
 type Props = {
   page: Object,
@@ -100,8 +100,6 @@ const Wrapper = () => WrappedComponent => {
     }
 
     handleKeyPress = (e: any) => {
-      // const doc: HTMLElement | null = document;
-
       e = e || window.event;
       const type = e.key;
 
