@@ -1,14 +1,7 @@
 // @flow
 import React, { Component } from "react";
-import { Meter, Stack } from "grommet";
-
-import {
-  PlayFill,
-  PauseFill,
-  Volume,
-  VolumeLow,
-  VolumeMute,
-} from "grommet-icons";
+import { Box, Meter, Button } from "grommet";
+import { Play, Pause, Volume, VolumeLow, VolumeMute } from "grommet-icons";
 import MIDISounds from "midi-sounds-react";
 import MIDIFile from "../../MIDIFile";
 import { MusicPlayerProvider, MusicPlayerConsumer } from "../../context";
@@ -33,6 +26,8 @@ const findFirstIns = (player: Object, nn: Object): ?number => {
 
 type Props = {
   midi: ?string,
+  updateScore: (notesArr: Array<string>, page: number) => any,
+  vrvToolkit: Object,
 };
 
 type State = {
@@ -86,13 +81,13 @@ class MusicPlayer extends Component<Props, State> {
 
   scrubberRef: ?Object = React.createRef();
 
-  stepDuration: number = 44 / 1000;
+  stepDuration: number = 0.5;
 
   handleAdjustPlay: () => void = this.handleAdjustPlay.bind(this);
 
   componentDidUpdate(prevProps: Props, prevState: State) {
-    const { song, playing } = this.state;
-    const { midi } = this.props;
+    const { song, playing, currentSongTime } = this.state;
+    const { midi, updateScore, vrvToolkit } = this.props;
     if (midi !== prevProps.midi) {
       this.parseMIDISong();
     }
@@ -102,13 +97,19 @@ class MusicPlayer extends Component<Props, State> {
     if (playing !== prevState.playing) {
       playing && this.startPlay();
     }
+    if (currentSongTime !== prevState.currentSongTime) {
+      // console.log(this.props.moveNextPage());
+      const vrvTime = Math.max(0, currentSongTime * 1000);
+      const currentScoreEl = vrvToolkit.getElementsAtTime(vrvTime);
+      return updateScore(currentScoreEl.notes, currentScoreEl.page);
+    }
   }
 
   startPlay = () => {
     const { isPlayed, song, progress } = this.state;
 
     if (isPlayed) {
-      const next = (song.duration * progress) / 100;
+      const next = (song.duration * 2 * progress) / 100;
       this.setState(prevState => ({
         songStart: prevState.songStart - (next - prevState.currentSongTime),
         currentSongTime: next,
@@ -164,8 +165,6 @@ class MusicPlayer extends Component<Props, State> {
 
   sendNotes = (start: number, end: number) => {
     const { song, songStart, reverberator, player } = this.state;
-    // console.log(song.tracks);
-
     if (!song) {
       return;
     }
@@ -219,7 +218,7 @@ class MusicPlayer extends Component<Props, State> {
     }
   };
 
-  seek = e => {
+  seek = (e: MouseEvent) => {
     if (this.scrubberRef) {
       const scrubberRect = this.scrubberRef.getBoundingClientRect();
       const percent =
@@ -273,17 +272,22 @@ class MusicPlayer extends Component<Props, State> {
   render() {
     return (
       <MusicPlayerProvider value={this.state}>
-        <PlayButton onClick={this.handleAdjustPlay} />
-        <VolumeButton onClick={() => this.handleAdjustVolume()} />
-        <Stack>
-          <div
+        <Box direction="row" align="center" justify="between">
+          <PlayButton onClick={this.handleAdjustPlay} />
+          <Box
+            direction="row"
+            align="center"
+            flex
             ref={e => {
               this.scrubberRef = e;
             }}
           >
             <AudioProgressBar onClick={this.seek} />
-          </div>
-        </Stack>
+          </Box>
+          <Box>
+            <VolumeButton onClick={() => this.handleAdjustVolume()} />
+          </Box>
+        </Box>
         <MIDISounds appElementName="root" ref={this.midiSoundsRef} />
       </MusicPlayerProvider>
     );
@@ -292,41 +296,47 @@ class MusicPlayer extends Component<Props, State> {
 
 const PlayButton = ({ onClick }) => (
   <MusicPlayerConsumer>
-    {({ playing }) =>
-      playing ? <PauseFill onClick={onClick} /> : <PlayFill onClick={onClick} />
-    }
+    {({ playing }) => (
+      <Button
+        hoverIndicator="background"
+        icon={playing ? <Pause /> : <Play />}
+        onClick={onClick}
+      />
+    )}
   </MusicPlayerConsumer>
 );
 
 const VolumeButton = ({ onClick }) => {
-  const icons = [
-    <VolumeMute onClick={onClick} />,
-    <VolumeLow onClick={onClick} />,
-    <Volume onClick={onClick} />,
-  ];
+  const icons = [<VolumeMute />, <VolumeLow />, <Volume />];
   return (
-    <MusicPlayerConsumer>{({ volume }) => icons[volume]}</MusicPlayerConsumer>
+    <MusicPlayerConsumer>
+      {({ volume }) => (
+        <Button
+          hoverIndicator="background"
+          icon={icons[volume]}
+          onClick={onClick}
+        />
+      )}
+    </MusicPlayerConsumer>
   );
 };
 
 const AudioProgressBar = ({ onClick }) => (
   <MusicPlayerConsumer>
     {({ progress }) => (
-      <Stack>
-        <Meter
-          aria-label="Audio progress"
-          type="bar"
-          size="full"
-          onClick={onClick}
-          thickness="small"
-          values={[
-            {
-              color: "accent-1",
-              value: progress,
-            },
-          ]}
-        />
-      </Stack>
+      <Meter
+        aria-label="Audio progress"
+        type="bar"
+        size="full"
+        onClick={onClick}
+        thickness="small"
+        values={[
+          {
+            color: "accent-1",
+            value: progress,
+          },
+        ]}
+      />
     )}
   </MusicPlayerConsumer>
 );

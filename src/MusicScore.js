@@ -19,12 +19,8 @@ type State = {
   midi: ?string,
   isLoaded: boolean,
   scriptCache: any,
-  score: {
-    totalPageNum: number,
-  },
-  current: {
-    pageNum: number,
-  },
+  currentPage: number,
+  totalPages: number,
 };
 
 const ScoreView = () => (
@@ -49,13 +45,11 @@ const Wrapper = () => WrappedComponent => {
       midi: null,
       isLoaded: false,
       scriptCache: {},
-      score: {
-        totalPageNum: 0,
-      },
-      current: {
-        pageNum: 1,
-      },
+      currentPage: 1,
+      totalPages: 0,
     };
+
+    updateScoreFollowingMIDI = this.updateScoreFollowingMIDI.bind(this);
 
     vrvToolkit: Object = {};
 
@@ -99,7 +93,7 @@ const Wrapper = () => WrappedComponent => {
       this.vrvToolkit && page && this.vrvToolkit.setOptions(options);
     }
 
-    handleKeyPress = (e: any) => {
+    handleKeyPress = (e: KeyboardEvent) => {
       e = e || window.event;
       const type = e.key;
 
@@ -118,15 +112,13 @@ const Wrapper = () => WrappedComponent => {
         this.setScoreOption();
         this.vrvToolkit.redoLayout();
         const musicScoreSvg = this.vrvToolkit.renderToSVG(pageNum, {});
-        const totalPageNum = this.vrvToolkit.getPageCount();
+        const totalPages = this.vrvToolkit.getPageCount();
         const midi = `${this.vrvToolkit.renderToMIDI()}`;
 
         this.setState({
           musicScoreSvg,
           midi,
-          score: {
-            totalPageNum,
-          },
+          totalPages,
         });
       }
     }
@@ -143,26 +135,29 @@ const Wrapper = () => WrappedComponent => {
     }
 
     moveNextPage() {
-      const { score, current } = this.state;
-      if (current.pageNum < score.totalPageNum) {
+      const { currentPage, totalPages } = this.state;
+      if (currentPage < totalPages) {
         this.setState(prevState => ({
-          current: {
-            pageNum: prevState.current.pageNum + 1,
-          },
+          currentPage: prevState.currentPage + 1,
         }));
-        this.reloadScoreSVG(current.pageNum + 1);
+        this.reloadScoreSVG(currentPage + 1);
       }
     }
 
+    goToPage(page: number = 1) {
+      this.setState({
+        currentPage: page,
+      });
+      this.reloadScoreSVG(page);
+    }
+
     movePrevPage() {
-      const { current } = this.state;
-      if (current.pageNum > 1) {
+      const { currentPage } = this.state;
+      if (currentPage > 1) {
         this.setState(prevState => ({
-          current: {
-            pageNum: prevState.current.pageNum - 1,
-          },
+          currentPage: prevState.currentPage - 1,
         }));
-        this.reloadScoreSVG(current.pageNum - 1);
+        this.reloadScoreSVG(currentPage - 1);
       }
     }
 
@@ -210,6 +205,13 @@ const Wrapper = () => WrappedComponent => {
       this.initScorePage();
     }
 
+    updateScoreFollowingMIDI(notesArr: Array<string>, page: number) {
+      const { currentPage } = this.state;
+      if (page !== currentPage) {
+        this.goToPage(page);
+      }
+    }
+
     render() {
       const { midi } = this.state;
       return (
@@ -217,7 +219,12 @@ const Wrapper = () => WrappedComponent => {
           <ScoreProvider value={this.state}>
             <WrappedComponent />
           </ScoreProvider>
-          <MusicPlayer midi={midi} />
+          <MusicPlayer
+            vrvToolkit={this.vrvToolkit}
+            updateScore={this.updateScoreFollowingMIDI}
+            getElementsAtTime={this.vrvToolkit.getElementsAtTime}
+            midi={midi}
+          />
         </div>
       );
     }

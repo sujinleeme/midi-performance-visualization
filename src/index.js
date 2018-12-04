@@ -79,7 +79,7 @@ class App extends React.Component {
                 </Heading>
               </Box>
             </Box>
-            <Box ref={this.scoreEL} gridArea="main" background="gray">
+            <Box ref={this.scoreEL} gridArea="main">
               <MusicScore page={scoreView} />
             </Box>
             <Box gridArea="control" background="brand">
