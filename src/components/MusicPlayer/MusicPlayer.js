@@ -95,26 +95,27 @@ class MusicPlayer extends Component<Props, State> {
       this.startLoad();
     }
     if (playing !== prevState.playing) {
-      playing && this.startPlay();
+      this.startPlay();
     }
     if (currentSongTime !== prevState.currentSongTime) {
       // console.log(this.props.moveNextPage());
       const vrvTime = Math.max(0, currentSongTime * 1000);
-      const currentScoreEl = vrvToolkit.getElementsAtTime(vrvTime);
-      return updateScore(currentScoreEl.notes, currentScoreEl.page);
+      const vrvEle = vrvToolkit.getElementsAtTime(vrvTime);
+      return updateScore(vrvEle.notes, vrvEle.page);
     }
   }
 
   startPlay = () => {
-    const { isPlayed, song, progress } = this.state;
-
+    const { isPlayed, song, progress, player } = this.state;
+    player.cancelQueue(this.audioContext);
     if (isPlayed) {
-      const next = (song.duration * 2 * progress) / 100;
+      const next = (song.duration * progress) / 100;
       this.setState(prevState => ({
         songStart: prevState.songStart - (next - prevState.currentSongTime),
         currentSongTime: next,
       }));
     } else {
+      // init
       this.setState(prevState => ({
         isPlayed: !prevState.isPlayed,
         currentSongTime: 0,
@@ -219,15 +220,15 @@ class MusicPlayer extends Component<Props, State> {
   };
 
   seek = (e: MouseEvent) => {
+    const { player, song } = this.state;
+    player.cancelQueue(this.audioContext);
     if (this.scrubberRef) {
       const scrubberRect = this.scrubberRef.getBoundingClientRect();
       const percent =
         ((e.clientX - scrubberRect.left) / scrubberRect.width) * 100;
-      const { player, song } = this.state;
-      this.setState({ progress: percent });
-      player.cancelQueue(this.audioContext);
       const next = (song.duration * percent) / 100;
       this.setState((prevState: State) => ({
+        progress: percent,
         playing: true,
         songStart: prevState.songStart - (next - prevState.currentSongTime),
         currentSongTime: next,

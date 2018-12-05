@@ -33,7 +33,7 @@ class App extends React.Component {
     scoreView: {
       height: 0,
       width: 0,
-      zoom: 30,
+      zoom: 40,
     },
   };
 
@@ -60,30 +60,26 @@ class App extends React.Component {
             margin="small"
             areas={[
               { name: "header", start: [0, 0], end: [1, 0] },
-              { name: "main", start: [0, 1], end: [0, 1] },
-              { name: "control", start: [1, 1], end: [1, 1] },
+              { name: "main", start: [0, 1], end: [1, 1] },
               { name: "foot", start: [0, 2], end: [1, 2] },
+
+              // { name: "header", start: [0, 0], end: [1, 0] },
+              // { name: "main", start: [0, 1], end: [0, 1] },
+              // { name: "control", start: [1, 1], end: [1, 1] },
+              // { name: "foot", start: [0, 2], end: [1, 2] },
             ]}
-            columns={["3/4", "1/4"]}
-            rows={["auto", "300px", "auto"]}
+            columns={["auto"]}
+            rows={["auto", "auto", "auto"]}
           >
-            <Box gridArea="header" background="brand">
-              <Box
-                background="brand"
-                direction="row"
-                align="center"
-                pad={{ between: "medium" }}
-              >
-                <Heading level={3} responsive>
+            <Box direction="row" gridArea="header">
+              <Box pad={{ between: "medium" }}>
+                <Heading color="brand" level={3} responsive textAlign="center">
                   MIDI performance Visualization
                 </Heading>
               </Box>
             </Box>
             <Box ref={this.scoreEL} gridArea="main">
               <MusicScore page={scoreView} />
-            </Box>
-            <Box gridArea="control" background="brand">
-              control
             </Box>
             <Box gridArea="foot" background="dark">
               <Box>

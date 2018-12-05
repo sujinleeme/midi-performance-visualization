@@ -2,6 +2,8 @@
 
 import React, { Component } from "react";
 import axios from "axios";
+import { Box, CheckBox, Text } from "grommet";
+import { Music } from "grommet-icons";
 import cache from "./utils/ScriptCache";
 import { SCRIPTS } from "./constants";
 import { ScoreProvider, ScoreConsumer } from "./context";
@@ -27,9 +29,28 @@ const ScoreView = () => (
   <ScoreConsumer>
     {({ isLoaded, error, musicScoreSvg }) =>
       isLoaded && !error ? (
-        <div dangerouslySetInnerHTML={{ __html: musicScoreSvg }} />
+        <Box
+          background="none"
+          animation="fadeIn"
+          margin="small"
+          dangerouslySetInnerHTML={{ __html: musicScoreSvg }}
+        />
       ) : (
-        <div>Loading</div>
+        <Box
+          align="center"
+          alignContent="center"
+          animation="fadeIn"
+          justify="center"
+          height="210px"
+          round="small"
+          margin="small"
+          background="light-2"
+        >
+          <Music />
+          <Text margin="small" color="dark-5">
+            Loading Music Score...
+          </Text>
+        </Box>
       )
     }
   </ScoreConsumer>
@@ -43,22 +64,34 @@ const Wrapper = () => WrappedComponent => {
       musicScore: null,
       musicScoreSvg: null,
       midi: null,
+      page: {},
       isLoaded: false,
       scriptCache: {},
       currentPage: 1,
       totalPages: 0,
+      visibleOptions: {
+        note: true,
+        tick: true,
+        measure: true,
+      },
     };
 
     updateScoreFollowingMIDI = this.updateScoreFollowingMIDI.bind(this);
 
     vrvToolkit: Object = {};
 
-    static getDerivedStateFromProps(state: State) {
+    static getDerivedStateFromProps(state: State, props) {
       if (!state.scriptCache) {
         return {
           scriptCache: cache({
             verovio: SCRIPTS.verovio,
           }),
+        };
+      }
+
+      if (props.page !== state.page) {
+        return {
+          page: props.page,
         };
       }
       return null;
@@ -217,6 +250,7 @@ const Wrapper = () => WrappedComponent => {
       return (
         <div>
           <ScoreProvider value={this.state}>
+            <ScoreStatusBar />
             <WrappedComponent />
           </ScoreProvider>
           <MusicPlayer
@@ -232,5 +266,39 @@ const Wrapper = () => WrappedComponent => {
 
   return ScoreWrapper;
 };
+
+const ScoreStatusBar = () => (
+  <Box direction="row" justify="between">
+    <Measure />
+    <ScoreViewOptions />
+  </Box>
+);
+
+const Measure = () => (
+  <ScoreConsumer>
+    {({ totalPages, currentPage }) => (
+      <Box direction="row">
+        <Text color="accent-1">{currentPage}</Text>
+        <Text>/ {totalPages}</Text>
+      </Box>
+    )}
+  </ScoreConsumer>
+);
+
+const ScoreViewOptions = () => (
+  <ScoreConsumer>
+    {({ visibleOptions }) => (
+      <Box gap="small" direction="row" justify="between">
+        {Object.keys(visibleOptions).map(option => (
+          <CheckBox
+            key={option}
+            // checked={visibleOptions[option]}
+            label={<Text>{option}</Text>}
+          />
+        ))}
+      </Box>
+    )}
+  </ScoreConsumer>
+);
 
 export default Wrapper()(ScoreView);
